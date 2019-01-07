@@ -1,12 +1,6 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Nov  7 13:31:05 2018
-
-@author: Beryl Jones
-"""
-
 import random
 from optparse import OptionParser
+
 random.seed(a=1234)
 
 parser = OptionParser()

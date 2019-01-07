@@ -66,6 +66,8 @@ def read_gff(gff_file):
     cur_gene = None
     scaf_dic = {}
     for i, line in enumerate(reader):
+        transId = None
+        cur_id = None
         cur_line = line.strip().split('\t')
         cur_scaf = cur_line[0]
         if cur_scaf not in scaf_dic.keys():
@@ -93,6 +95,8 @@ def read_gff(gff_file):
                 if tok.split("=")[0] == "transcript_id":
                     transId = tok.split("=")[1]
                     break
+            if transId is None:
+                continue
             if cur_gene.mrna == transId:
                 cur_gene.add_exon(int(cur_line[3]), int(cur_line[4]))
 
@@ -102,6 +106,8 @@ def read_gff(gff_file):
                     if tok.split("=")[0] == "transcript_id":
                         transId = tok.split("=")[1]
                         break
+                if transId is None:
+                    continue
                 cur_gene.mrna = transId
 
         # these all need to be handled separately to find the gene
