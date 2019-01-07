@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import random
 
 
 def main():
@@ -120,18 +121,73 @@ def read_gff(gff_file):
 
 def process_peaks(options, gff_data):
     '''assign each peak to a feature and output the result to all outputs'''
-    with open(options.all_outputs, 'w') as all_output, \
-            open(options.peak_centers, 'r') as peaks:
+    with open(options.peak_centers, 'r') as peaks:
 
-        all_output.write("chr\tcoord\tproxtype\tgene\n")
+        if options.all_outputs is not None:
+            all_output = open(options.all_outputs, 'w')
+        else:
+            all_output = None
+
+        if options.priority is not None:
+            # for consistent random choices
+            random.seed(1234)
+
+            # set priority of types of features
+            priority_order = {
+                   "intergenic": 1,
+                   "downstream": 2,
+                   "upstream": 3,
+                   "intron": 4,
+                   "three_utr": 5,
+                   "five_utr": 6,
+                   "exon": 7,
+                   "promoter": 8,  # highest priority
+            }
+
+            priority = open(options.priority, 'w')
+        else:
+            priority = None
+
+        if priority:
+            priority.write("chr\tcoord\tproxtype\tgene\n")
+
+        if all_output:
+            all_output.write("chr\tcoord\tproxtype\tgene\n")
+
         for line in peaks:
             scaffold, position = line.split()
-            for gene, type in process_peak(int(position),
-                                           scaffold,
-                                           gff_data,
-                                           options.promoter_size):
-                all_output.write(
-                    f"{scaffold}\t{position}\t{type}\t{gene}\n")
+            features = process_peak(int(position),
+                                    scaffold,
+                                    gff_data,
+                                    options.promoter_size)
+            if all_output:
+                for gene, type in features:
+                    all_output.write(
+                        f"{scaffold}\t{position}\t{type}\t{gene}\n")
+
+            if priority:
+                gene_list = []
+                highest_priority = "intergenic"
+                for gene, type in features:
+                    if priority_order[highest_priority] < \
+                            priority_order[type]:
+                        gene_list = [gene]
+                        highest_priority = type
+
+                    elif highest_priority == type:
+                        gene_list.append(gene)
+
+                priority.write(
+                    f"{scaffold}\t"
+                    f"{position}\t"
+                    f"{highest_priority}\t"
+                    f"{random.choice(gene_list)}\n")
+
+        if all_output:
+            all_output.close()
+
+        if priority:
+            priority.close()
 
 
 def process_peak(position, scaffold, gff_data, promoter_size):
